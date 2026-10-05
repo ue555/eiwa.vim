@@ -1,8 +1,6 @@
 # eiwa.vim
 
-> [!WARNING]
-> **This plugin is under active development.** Its API, configuration, and
-> behavior may change without notice.
+[日本語版 README](README_ja.md)
 
 A native Vim conversation UI intended for English-to-Japanese translation.
 It is the Vim port of [eiwa.nvim](https://github.com/ue555/eiwa.nvim) and

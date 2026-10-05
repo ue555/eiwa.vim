@@ -1,9 +1,5 @@
 # eiwa.vim
 
-> [!WARNING]
-> **このプラグインは現在開発中です。** API、設定、動作は予告なく変更される
-> 可能性があります。
-
 英語から日本語への翻訳を目的とした、Vimネイティブの対話UIです。
 [eiwa.nvim](https://github.com/ue555/eiwa.nvim) のVim移植版で、Goバックエンドと
 JSON Linesプロトコルを共用しています。Goバックエンドから英日翻訳HTTP APIを
