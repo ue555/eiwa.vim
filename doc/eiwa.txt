@@ -1,0 +1,164 @@
+*eiwa.vim*                                Native translation UI for Vim
+
+==============================================================================
+INTRODUCTION                                                   *eiwa-intro*
+
+eiwa.vim provides a native Vim conversation interface intended for
+English-to-Japanese translation through an HTTP API. The asynchronous Go agent
+connects to http://127.0.0.1:8000/translate by default. Start the API
+separately.
+
+Requires Vim 9.0 or later with +job, +channel, +popupwin, and +textprop.
+
+==============================================================================
+SETUP                                                           *eiwa-setup*
+
+Options are applied with |eiwa#Setup()| or with the |g:eiwa_config|
+dictionary. All keys are optional; the defaults are shown below.
+>
+  vim9script
+  import autoload 'eiwa.vim'
+  eiwa.Setup({
+    command: null,
+    api: {
+      endpoint: 'http://127.0.0.1:8000/translate',
+      timeout: 90,
+      style: 'source',
+      glossary: {},
+    },
+    window: {
+      position: 'float',
+      width: 0.8,
+      height: 0.8,
+      split_width: 0.4,
+      split_height: 0.35,
+      input_height: 3,
+      border: 'rounded',
+    },
+    history: {
+      max_messages: 100,
+    },
+    keymaps: {
+      submit: '<CR>',
+      cancel: '<C-c>',
+      close: 'q',
+    },
+  })
+<
+From a legacy vimrc:
+>
+  call eiwa#Setup({'api': {'style': 'polite'}})
+<
+or:
+>
+  let g:eiwa_config = {'api': {'style': 'polite'}}
+<
+                                                              *g:eiwa_config*
+g:eiwa_config		Dictionary with the same shape as the |eiwa#Setup()|
+			argument. It is read the first time the interface is
+			used when |eiwa#Setup()| has not been called.
+
+window.position accepts "float", "right", "bottom", or "tab". In the "float"
+layout the history is a popup window and the input area is a bottom split,
+because Vim popup windows cannot be edited. The input is centered at the same
+width as the history, with a border and an Input title.
+window.border accepts "rounded",
+"single", "double", "solid", or "none".
+
+api.timeout is in seconds; api.style accepts "source", "polite", or "plain".
+api.glossary maps English terms to Japanese translations. Restart Vim after
+changing settings. Complete translations appear after API generation finishes.
+Cancellation stops HTTP waiting; server-side generation may continue briefly.
+
+==============================================================================
+COMMANDS                                                     *eiwa-commands*
+
+:Eiwa             Toggle the Eiwa window.                              *:Eiwa*
+:EiwaSubmit       Translate the entire input.                    *:EiwaSubmit*
+:EiwaClose        Close the window while retaining history.       *:EiwaClose*
+:EiwaClear        Clear session history.                          *:EiwaClear*
+:EiwaCancel       Cancel the active request.                     *:EiwaCancel*
+:EiwaNewSession   Cancel the active request and clear history.*:EiwaNewSession*
+
+==============================================================================
+KEYS                                                             *eiwa-keys*
+
+In the input area:
+  <CR>        Submit the entire input (keymaps.submit).
+  <C-v>       Paste the clipboard, preserving newlines and indentation.
+  <S-Insert>  Paste the clipboard (when delivered by the terminal).
+  <C-j>       Insert a newline in Insert mode.
+  <S-CR>      Insert a newline if the terminal supports Shift+Enter.
+  <C-c>       Cancel the active request (keymaps.cancel).
+  <Esc>       Close the interface.
+  q           Close the interface in Normal mode (keymaps.close).
+  <PageUp>    Scroll the history up.
+  <PageDown>  Scroll the history down.
+
+Use <C-v> for multiline input. This operation reads the clipboard
+directly. Without +clipboard, the unnamed register is used. Queued Enter keys in
+a terminal paste burst insert newlines. A separate Enter after the burst submits
+the full draft. Burst detection uses a short idle interval; when the terminal
+cannot distinguish paste from typing, use <C-v> for reliable multiline paste.
+Open with :Eiwa and translate with <CR> or :EiwaSubmit. Change any old
+keymaps.submit: '<F5>' setting to '<CR>' to restore Enter-to-translate.
+
+In the history window of the split and tab layouts:
+  q, <Esc>    Close the interface.
+  <C-c>       Cancel the active request.
+  i           Move to the input area.
+
+==============================================================================
+FUNCTIONS                                                   *eiwa-functions*
+
+eiwa#Setup({opts})                                             *eiwa#Setup()*
+		Apply options and return the merged configuration.
+
+eiwa#Open()  eiwa#Close()  eiwa#Toggle()                        *eiwa#Open()*
+		Open, close, or toggle the interface.
+
+eiwa#Submit([{text}])                                         *eiwa#Submit()*
+		Submit {text}, or the input area when omitted. Returns
+		|v:true| when the request was sent.
+
+eiwa#Cancel()  eiwa#Clear()  eiwa#NewSession()                *eiwa#Cancel()*
+		Same as the commands.
+
+eiwa#GetMessages()  eiwa#GetStatus()                     *eiwa#GetMessages()*
+		Return a copy of the history and the status, one of
+		"idle", "submitting", "streaming", or "error".
+
+==============================================================================
+HIGHLIGHTS                                                 *eiwa-highlights*
+
+EiwaUser, EiwaAssistant, EiwaError, EiwaSystem color the message labels.
+EiwaBorder colors the history and input borders in the "float" layout.
+EiwaNormal colors the history and input area (linked to Normal by default).
+
+==============================================================================
+BACKEND                                                       *eiwa-backend*
+
+Install a release binary, falling back to a local Go build:
+>
+  scripts/install-agent.sh
+<
+Build the Go backend for the current platform:
+>
+  scripts/build.sh
+<
+On Windows, use:
+>
+  powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build.ps1
+<
+Build Linux amd64, Linux arm64, and Apple Silicon binaries:
+>
+  scripts/build.sh --all
+<
+The backend is resolved in this order:
+
+1. The command option of |eiwa#Setup()|.
+2. eiwa-agent in $PATH.
+3. bin/eiwa-agent-{os}-{arch} in the plugin.
+4. bin/eiwa-agent in the plugin.
+
+vim:tw=78:ts=8:noet:ft=help:norl:
